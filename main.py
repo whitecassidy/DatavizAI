@@ -601,10 +601,16 @@ class AnalyticsBot:
                     "categorical_columns": list(self.categorical_cols)
                 })
             
+            elif 'pie' in query:
+                return ("Please select a column for the pie chart:", {
+                    "type": "pie",
+                    "columns": list(self.categorical_cols)
+                })
+            
             else:
                 return ("Please select the type of plot:", {
                     "type": "plot_selection",
-                    "options": ["histogram", "boxplot", "scatter", "line", "bar", "heatmap", "violin"]
+                    "options": ["histogram", "boxplot", "scatter", "line", "bar", "heatmap", "violin", "pie"]
                 })
         
         elif 'describe' in query or 'summary' in query:
@@ -726,6 +732,16 @@ class AnalyticsBot:
         sns.heatmap(self.df[columns].corr(), annot=True, ax=ax)
         plt.title('Correlation Heatmap')
         return fig
+
+    def _create_pie_chart(self, column: str) -> Tuple[plt.Figure, str]:
+        """Create pie chart and analyze it"""
+        fig, ax = plt.subplots()
+        data = self.df[column].value_counts()
+        ax.pie(data, labels=data.index, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        plt.title(f'Pie Chart of {column}')
+        analysis = self.insights_generator.analyze_visualization(self.df, "pie", [column])
+        return fig, analysis
 
     def _detect_outliers(self, column: str, method: str = 'iqr', y_column: str = None) -> Tuple[pd.Series, plt.Figure]:
         """
@@ -1267,16 +1283,19 @@ def main():
                 "role": "assistant",
                 "content": "I've loaded your data! You can ask me questions like:\n" +
                           "- Generate insights about the data\n" +
-                          "- Generate Gemini insights\n" +
-                          "- Tell me about this dataset\n" +
-                          "- Analyze the sales trends\n" +
-                          "- Show me missing values\n" +
-                          "- Impute missing values using mean/median/mode\n" +
-                          "- Fill missing values with forward fill\n" +
-                          "- What's the mean of [column]?\n" +
+                          "- Suggest appropriate visualizations for the dataset\n" +
+                          "- Provide statistical summaries of the dataset\n" +
+                          "- Analyze trends in the data\n" +
+                          "- Show me missing values and their distribution\n" +
+                          "- Impute missing values using mean, median, mode, or other strategies\n" +
+                          "- Fill missing values with forward fill or backward fill\n" +
+                          "- What's the mean, median, or mode of [column]?\n" +
                           "- Show me a histogram of [column]\n" +
-                          "- Show me the correlation heatmap\n" +
-                          "- Describe [column]"
+                          "- Show me the correlation heatmap for selected columns\n" +
+                          "- Describe the statistics of [column]\n" +
+                          "- Detect and analyze outliers in [column]\n" +
+                          "- Normalize or scale the data in [column]\n" +
+                          "- Handle duplicates in the dataset"
             })
 
         # Display chat messages
@@ -1373,15 +1392,50 @@ def main():
                                         st.write("Analysis:")
                                         st.write(analysis)
                             
-                            elif message["content"][1]["type"] == "plot_selection":
-                                plot_type = st.selectbox(
-                                    "Select the type of plot you want to create:",
-                                    message["content"][1]["options"]
+                            elif message["content"][1]["type"] == "pie":
+                                selected_col = st.selectbox(
+                                    "Select a column:",
+                                    message["content"][1]["columns"]
                                 )
-                                if plot_type:
-                                    new_response = st.session_state.bot.process_query(f"show {plot_type}")
-                                    st.session_state.messages.append({"role": "assistant", "content": new_response})
-                                    st.rerun()
+                                if selected_col:
+                                    fig, analysis = st.session_state.bot._create_pie_chart(selected_col)
+                                    st.pyplot(fig)
+                                    plt.close()
+                                    if analysis:
+                                        st.write("Analysis:")
+                                        st.write(analysis)
+                            
+                            elif message["content"][1]["type"] == "duplicates":
+                                selected_cols = st.multiselect(
+                                    "Select columns to check for duplicates:",
+                                    message["content"][1]["columns"]
+                                )
+                                if selected_cols:
+                                    df_clean, duplicate_info, fig = st.session_state.bot._handle_duplicates(selected_cols)
+                                    st.dataframe(df_clean)
+                                    st.pyplot(fig)
+                                    plt.close()
+                                    st.write("Duplicate Information:")
+                                    st.write(duplicate_info)
+                            
+                            elif message["content"][1]["type"] == "fill_missing":
+                                fill_method = st.selectbox(
+                                    "Select method to fill missing values:",
+                                    ["mean", "median", "mode", "forward fill", "backward fill"]
+                                )
+                                if fill_method:
+                                    df_filled = st.session_state.bot.fill_missing_values(fill_method)
+                                    st.dataframe(df_filled)
+                            
+                            elif message["content"][1]["type"] == "normalize":
+                                selected_col = st.selectbox(
+                                    "Select a column to normalize:",
+                                    message["content"][1]["columns"]
+                                )
+                                if selected_col:
+                                    normalized_data = st.session_state.bot.normalize_data(selected_col)
+                                    st.write("Normalized Data:")
+                                    st.dataframe(normalized_data)
                             
                             elif message["content"][1]["type"] == "outliers":
                                 # Let user select dimension first
