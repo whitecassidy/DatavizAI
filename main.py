@@ -645,7 +645,7 @@ class AnalyticsBot:
             })
         
         # Default response
-        return "I can help you with:\n- Mean/average of columns\n- Median of columns\n- Histograms\n- Correlation heatmap\n- Summary statistics\n\nTry asking something like 'Show me the histogram of Sales'", None
+        return "I can assist you with the following:\n- Calculating the mean or average of columns\n- Finding the median of columns\n- Creating histograms\n- Generating correlation heatmaps\n- Providing summary statistics\n\nYou can try asking something like, 'Can you show me the histogram of Sales?'", None
 
     def _extract_imputation_method(self, query: str) -> str:
         """Extract imputation method from query"""
@@ -1284,7 +1284,7 @@ def main():
                 "content": "I've loaded your data! You can ask me questions like:\n" +
                           "- Generate insights about the data\n" +
                           "- Suggest appropriate visualizations for the dataset\n" +
-                          "- Provide statistical summaries of the dataset\n" +
+                          "- Provide statistic summary of the dataset\n" +
                           "- Analyze trends in the data\n" +
                           "- Show me missing values and their distribution\n" +
                           "- Impute missing values using mean, median, mode, or other strategies\n" +
