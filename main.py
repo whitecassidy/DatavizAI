@@ -1291,6 +1291,8 @@ def main():
                           "- Fill missing values with forward fill or backward fill\n" +
                           "- What's the mean, median, or mode of [column]?\n" +
                           "- Show me a histogram of [column]\n" +
+                          "- Show me a Scatter plot of [column]\n" +
+                          "- Show me a piechart of [column]\n" +
                           "- Show me the correlation heatmap for selected columns\n" +
                           "- Describe the statistics of [column]\n" +
                           "- Detect and analyze outliers in [column]\n" +
